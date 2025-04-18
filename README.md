@@ -14,6 +14,7 @@ df_raw <- read.csv("Steam Trends 2023 by @evlko and @Sadari - Games Data.csv")
 ## Peeping the data
 ```{r}
 head(df_raw)
+nrow(df_raw)
 ```
 ## Check for outliers
 ```{r}
@@ -37,18 +38,86 @@ df_games <- df_raw |>
   filter(reviews > 1000, price < 100) 
 
 ```
-
-## Test 1: correlation testing
+## Descriptive statistics
 ```{r}
-# apparently we can run a "correlation test," which gives both correlation coefficient and a t-test on the correlation coefficient (with the null being: r-sqaured is equal to 0)
-cor.test(df_games$price, df_games$rating, use = "complete.obs")
+# number of reviews
+median(df_games$reviews)
+mean(df_games$reviews)
+range(df_games$reviews)
+
+# rating score
+median(df_games$rating)
+mean(df_games$rating)
+range(df_games$rating)
+
+# launch price
+median(df_games$price)
+mean(df_games$price)
+range(df_games$price)
+
+# indie tag
+indie_games <- nrow(df_games |> filter(indie == "1"))
+perc_indie <- indie_games / nrow(df_games) * 100
+
+indie_games
+perc_indie
 ```
 
-## Test 2. linear regression
+## Test 1: correlation coefficient, linear regression
 ```{r}
-model <- lm(df_games$price ~ df_games$rating)
-plot(df_games$price, df_games$rating, main = "Price vs. Review Score", xlab = "Price", ylab = "Review Score")
-abline(model, col = "purple")
+cor(df_games$rating, df_games$price)
+model_linear <- lm(df_games$rating ~ df_games$price)
+
+plot(df_games$rating ~ df_games$price,
+     xlab = "Price", 
+     ylab = "Review Score",
+     main = "Price vs. Review Score")
+abline(model_linear, col = "purple")
+
+summary(model_linear)
+```
+
+## Test 2. Splitting data based on price groups
+```{r}
+hist(df_games$price,
+     main = "Histogram of prices",
+     xlab = "Price",
+     ylab = "Number of games",
+     col = "lightblue")
+
+groups <- df_games |>
+  mutate(group = case_when(
+    price <= 10 ~ "Broke",
+    (price > 10 & price <= 30) ~ "Cheapskate",
+    (price > 30 & price <= 50) ~ "Spendthrift",
+    price > 50 ~ "Filthy Rich"
+  ))
+
+anova <- aov(groups$rating ~ groups$group)
+summary(anova)
+
+# fisher LSD test
+pairwise.t.test(groups$rating, groups$group, p.adjust.method="none")
+
+boxplot(groups$rating ~ groups$group,
+        main = "Review Score by Price Range",
+        xlab = "Price Group", ylab = "Review Score")
+```
+## Test 3. Indie vs AAA for kicks
+```{r}
+df_indie <- df_games |>
+  filter(indie == 1)
+
+df_AAA <- df_games |>
+  filter(indie == 0)
+
+cor(df_indie$rating, df_indie$price)
+model_indie <- lm(df_indie$rating ~ df_indie$price)
+summary(model_indie)
+
+cor(df_AAA$rating, df_AAA$price)
+model_AAA <- lm(df_AAA$rating ~ df_AAA$price)
+summary(model_AAA)
 ```
 
 
@@ -56,7 +125,6 @@ abline(model, col = "purple")
 ## Organizing the data
 ```{r}
 library(caret)
-
 
 # cool random seed for reproducibility
 set.seed(2100)
@@ -82,6 +150,19 @@ model.testing <- predict(model, testing_set)
 
 ## plot our models!!
 ```{r}
-plot(training_set$rating, model.training, col = "blue")
-plot(testing_set$rating, model.testing, col = "red")
+plot(model.training, training_set$rating, 
+     col = "blue",
+     xlab = "Prediction for rating based on training set",
+     ylab = "Actual rating")
+model_train <- lm(training_set$rating ~ model.training)
+abline(model_train, col = "black")
+
+plot(model.testing, testing_set$rating, 
+     col = "red",
+     xlab = "Prediction for rating based on testing set",
+     ylab = "Actual rating")
+model_test <- lm(testing_set$rating ~ model.testing)
+abline(model_test, col = "black")
+
+summary(model)
 ```
