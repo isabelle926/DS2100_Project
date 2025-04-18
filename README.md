@@ -1,6 +1,8 @@
 # DS2100_Project
 R code for the DS 2100 Final project
 
+Data: https://www.reddit.com/r/gamedev/comments/165cii0/this_year_we_gathered_data_about_65000_games_in/
+
 .
 .
 .
