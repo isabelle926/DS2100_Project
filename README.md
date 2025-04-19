@@ -101,6 +101,9 @@ summary(anova)
 # fisher LSD test
 pairwise.t.test(groups$rating, groups$group, p.adjust.method="none")
 
+order <- c("Broke", "Cheapskate", "Spendthrift", "Filthy Rich")
+groups$group <- factor(groups$group, levels = order)
+
 boxplot(groups$rating ~ groups$group,
         main = "Review Score by Price Range",
         xlab = "Price Group", ylab = "Review Score")
